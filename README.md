@@ -1,9 +1,6 @@
 # Modern Cinema Collaboration Network: Small-World Dynamics, Structural Bridges, and Community Partitioning (2018–2026)
 
-**Course:** CS 176: Social Network Analysis — San José State University  
-**Instructor:** Dr. Katerina Potika  
-**Author:** Joel Jacob (`joel.k.jacob@sjsu.edu`)  
-**Semester:** Fall 2026  
+**Name:** Joel Jacob
 
 ---
 
