@@ -1,12 +1,14 @@
-# Ignore past projects reference archive
+# Course directions & milestone report drafts
+directions.txt
+Project_Proposal*.md
+Project_Progress_Report*.md
 Old Projects/
 
-# Ignore large raw dataset cache (only track generated GraphML artifact)
+# Raw dataset cache
 movies_cache.json
 
 # OS and Python artifacts
 .DS_Store
 __pycache__/
 *.py[cod]
-*$py.class
 .venv/

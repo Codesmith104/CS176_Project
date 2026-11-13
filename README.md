@@ -35,16 +35,12 @@ The network was constructed by projecting a bipartite affiliation network of 1,6
 
 ## 📂 Repository Structure
 ```text
-├── README.md                      # Project documentation and summary
-├── .gitignore                     # Excludes cache and archive files
-├── build_cinema_network.py        # Pipeline script: data extraction, graph building, metrics
-├── cinema_network.graphml         # Generated network artifact (GraphML format, 1.7 MB)
-├── preliminary_network.png        # High-resolution network visualization (300 DPI)
-├── Project_Proposal.md          # Milestone 1: Approved 1-2 page proposal
-├── Project_Progress_Report.md     # Milestone 2: 2-3 page formal progress report
-└── directions.txt                 # Course assignment instructions and guidelines
+├── README.md                 # Project documentation and empirical summary
+├── build_cinema_network.py   # Pipeline script: data extraction, graph construction, metrics
+├── cinema_network.graphml    # Generated network artifact (GraphML format, 1.7 MB)
+├── preliminary_network.png   # High-resolution network visualization (300 DPI)
+└── .gitignore                # Git ignore configuration
 ```
-
 ---
 
 ## 🚀 Reproduction & Setup
