@@ -2,7 +2,6 @@
 """
 CS 176: Social Network Analysis — Step 1 Data Pipeline & Network Construction
 Script: build_cinema_network.py
-Author: Joel Jacob (Solo Project)
 Description:
     Constructs an undirected, weighted unipartite collaboration network of modern cinema (2018-2026).
     Extracts top 4 billed actors per feature film, computes tie weights based on co-starring frequency,
@@ -19,7 +18,8 @@ import networkx.algorithms.community as nx_comm
 import matplotlib.pyplot as plt
 
 def load_modern_movies():
-    cache_file = "/Users/joelj/Class_Stuff/176/Project/movies_cache.json"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    cache_file = os.path.join(script_dir, "movies_cache.json")
     if os.path.exists(cache_file):
         print(f"Loading cached movie dataset from {cache_file}...")
         with open(cache_file, "r", encoding="utf-8") as f:
@@ -72,7 +72,9 @@ def construct_collaboration_network(movies, max_billing=4):
     print(f"Graph constructed: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges.")
     return G
 
-def export_graphml(G, filepath="/Users/joelj/Class_Stuff/176/Project/cinema_network.graphml"):
+def export_graphml(G, filepath=None):
+    if filepath is None:
+        filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cinema_network.graphml")
     print(f"Exporting network to GraphML format: {filepath}...")
     nx.write_graphml(G, filepath)
     print("GraphML export successful!")
@@ -154,7 +156,9 @@ def compute_characterization_metrics(G):
         "n_comms": len(comms)
     }
 
-def generate_preliminary_visualization(G, output_path="/Users/joelj/Class_Stuff/176/Project/preliminary_network.png"):
+def generate_preliminary_visualization(G, output_path=None):
+    if output_path is None:
+        output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "preliminary_network.png")
     print(f"\nGenerating preliminary network visualization: {output_path}...")
     ccs = sorted(nx.connected_components(G), key=len, reverse=True)
     gcc = G.subgraph(ccs[0]).copy()

@@ -1,7 +1,5 @@
 # Modern Cinema Collaboration Network: Small-World Dynamics, Structural Bridges, and Community Partitioning (2018–2026)
 
-**Name:** Joel
-
 ---
 
 ## 📌 Project Overview
