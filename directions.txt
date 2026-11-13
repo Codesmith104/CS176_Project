@@ -1,0 +1,112 @@
+Project : Social Network Analysis
+
+Write 1-2 pages given the group members, the dataset, and what kind of knowledge you hope to gain from the analysis.
+
+
+General information for the final submission
+
+This project is composed of four steps:
+
+1. Create a social network (e.g. writing a Python script or using one of the tools) from data found on the Web (e.g. into GraphML format).
+2. Perform characterization of the network, and apply one of the algorithms for social graphs from a paper (see list for examples).
+3. Create a visualization of the network using one of the tools, e.g. NetworkX.
+4. Write a report on your work.
+
+Here is a link with ideas:
+
+Project Ideas:
+Old projects: directory already under here Projects/Old projects
+
+Some conferences to get ideas:
+
+The  ACM Web (WWW) 2026 Conference: https://dl.acm.org/doi/proceedings/10.1145/3774904
+
+ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD) 2026 Conference: https://dl.acm.org/doi/proceedings/10.1145/3770854
+
+International Conference on Advances in Social Networks Analysis and Mining (ASONAM) Conference 2025: https://dblp.org/db/conf/asunam/index.html
+
+ACM International Conference on Web Search and Data Mining (WSDM) 2025: https://www.wsdm-conference.org/2025/accepted-papers/
+
+Datasets:
+Network Repository. An Interactive Scientific Network Data Repository: https://networkrepository.com/.
+Stanford Network Analysis Project: http://snap.stanford.edu/.
+ 
+
+Machine Learning Repository UCI: https://archive.ics.uci.edu/ml/index.php.
+Open Graph Benchmark: Datasets for Machine Learning on Graphs: https://arxiv.org/abs/2005.00687
+
+Local community datasets 
+
+San Jose CA Open Data Portal 
+
+https://data.sanjoseca.gov/
+
+County of Santa Clara Open Data Portal
+
+https://data.sccgov.org/ 
+
+Santa Clara County Public Health Department 
+
+ https://data-sccphd.opendata.arcgis.com/ 
+
+http://web.stanford.edu/class/cs224w/
+
+ 
+
+More details on the typical Steps on an example:
+
+Step 1: Creating a Social Network from Web Data
+
+Locate a dataset from the Web in order to create a social network.
+
+Here are some ideas:
+
+Actors starring in a movie
+http://www.imdb.com/interfaces
+
+Biblical names
+http://moreno.ss.uci.edu/data.html#bible
+
+http://www-958.ibm.com/software/data/cognos/manyeyes/visualizations/co-occurrences-of-names-inthe-new-3
+
+Twitter users discussing a particular topic
+https://twitter.com/search?q=%23marchMadness&src=typd
+
+Teams competing against each other
+http://apps.washingtonpost.com/sports/apps/live-updating-mens-ncaa-basketball-bracket/bracket/2013/
+
+http://www.databasefootball.com/
+
+SNAP
+http://snap.stanford.edu
+
+ 
+
+In some tools it is easier but some tools you must write script (scripts) to parse through the saved data files and create a GraphML file. If parsing through HTML, you might need to write some regular expressions. Structured text files are easier to parse.
+
+Step 2: Network Characterization and example algorithm
+
+You should report the following information about your network:
+
+1. Number of nodes.
+2. Number of edges.
+3. Number of connected components.
+4. The diameter (longest shortest path).
+5. The five nodes with the highest clustering coefficients.
+6. The five nodes with highest betweenness centrality (node betweenness).
+As an example, if you choose community detection with the Girvan-Newman algorithm:
+
+7. The edges that would be removed using the Girvan-Newman algorithm when splitting the given graph with N components into components. You will probably only need to write a loop which removes one edge at a time by finding the edge with the largest edge betweenness and deleting it. If more than one edge has the same max betweenness values, break ties arbitrary and pick one of the edges to delete.
+Step 3: Create a Visualization
+
+You can use any network visualization tool you’d like, but you need to create a single image (or more if you’d like) that gives a good picture of what your graph looks like. You should introduce color. When you are writing your final report, for each visualization, you will need to explain what you did to produce your image using the tool you have chosen. Those who use multiple techniques and produce more fascinating images will be given more points.
+
+Step 4: Summarize Your Work
+
+At the end summarize your results in a report (no more than 10 pages) to present your work.
+
+Your report should contain the following:
+
+1. Reference the website from which you got your data and explain why you chose this data. Explain the social network you wanted to create, what the nodes and edges represent.
+2. Provide the data set.
+3. Include your visualization screenshots and provide the steps (and/or scripts that you used).

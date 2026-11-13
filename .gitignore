@@ -1,0 +1,12 @@
+# Ignore past projects reference archive
+Old Projects/
+
+# Ignore large raw dataset cache (only track generated GraphML artifact)
+movies_cache.json
+
+# OS and Python artifacts
+.DS_Store
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
