@@ -1,110 +1,35 @@
 # CS 176: Social Network Analysis — Project Proposal
-**Department of Computer Science, San José State University**  
-**Instructor:** Dr. Katerina Potika | **Semester:** Fall 2026  
+**Instructor:** Dr. Katerina Potika | **Semester:** Fall 2026 | **Department of Computer Science, SJSU**
 
----
+## Modern Cinema Collaboration Network: Small-World Dynamics, Structural Bridges, and Community Partitioning (2018–2026)
 
-### Project Title:
-## Structural Topology, Small-World Dynamics, and Community Partitioning in Modern Cinema Collaboration Networks (2018–2026)
-
-**Student Researcher:** Joel Jacob (Solo Project)  
-**Email:** joel.jacob@sjsu.edu  
-**Submission Date:** October 2026  
+**Student Researcher:** Joel Jacob (Solo Project) | **Email:** joel.jacob@sjsu.edu
 
 ---
 
 ### 1. Project Overview & Motivation
-Complex social collaboration networks govern creative production in the entertainment industry. While historical social network analyses have investigated classical Hollywood or isolated film productions (e.g., single-movie ego-networks), modern cinema (2018–2026) has experienced structural transformations driven by the expansion of shared cinematic universes (e.g., Marvel, DC), high-budget streaming exclusives (Netflix, Apple TV+, Amazon MGM), and prestige auteur circuits (A24, Neon).
+Creative collaboration in the film industry is governed by complex social dynamics. While classical network studies examined historical Hollywood or isolated single-film ego-networks, contemporary cinema (2018–2026) has been fundamentally transformed by shared franchise universes (Marvel, DC), major streaming studio exclusives (Netflix, Apple TV+), and prestige independent circuits (A24, Neon).
 
-This project investigates the social topology of modern film collaboration by constructing an **actor-to-actor collaboration network** from global feature films released between 2018 and 2026. By mapping co-starring affiliations, we aim to uncover how casting cliques form, identify the structural "bridge actors" who connect disparate cinematic genres and franchises, quantify the empirical "Six Degrees of Kevin Bacon" small-world effect in contemporary cinema, and compare divisive (Girvan–Newman) versus agglomerative (Louvain) community detection algorithms on real-world creative networks.
+This project investigates the social topology of modern film production by constructing an actor-to-actor collaboration network from global feature films released between 2018 and 2026. By analyzing co-starring affiliations, we aim to quantify the small-world phenomenon in modern cinema, identify the structural "bridge actors" who connect disparate genres, and evaluate how casting communities partition across creative sub-economies.
 
----
+### 2. Dataset & Network Model
+* **Data Sources:** Official IMDb non-commercial datasets (datasets.imdbws.com) using `title.basics.tsv.gz` (release years, genres), `title.principals.tsv.gz` (cast billing positions), and `name.basics.tsv.gz` (actor identities), cross-referenced with TMDB box-office lists.
+* **Network Construction:** Bipartite actor-movie affiliation data is projected into an undirected, weighted unipartite actor collaboration graph G = (V, E, W):
+  * **Nodes (V):** Professional actors starring in widely released feature films (2018–2026). To eliminate peripheral cameos and avoid artificial clique inflation, we retain the top 4–6 billed principal actors per film.
+  * **Edges (E) & Weights (W):** An undirected edge (u, v) exists if actors u and v co-starred in at least one feature film. The integer weight w(u, v) >= 1 represents the total number of shared productions, quantifying collaboration tie strength.
+  * **Target Scale & Export:** ~1,800 to 2,500 actors and ~6,000 to 10,000 edges. This size is statistically robust while allowing exact computation of shortest paths, diameter, and edge-betweenness centrality in NetworkX. The network will be exported to a standardized `.graphml` file containing actor metadata (genres, film counts) and edge collaboration weights.
 
-### 2. Dataset Provenance & Network Extraction Pipeline
+### 3. Knowledge to Gain & Research Questions
+We center our investigation on four key research questions grounded in network science:
 
-#### 2.1 Data Sources
-The primary data will be acquired from official, non-commercial public interfaces:
-1. **IMDb Official Non-Commercial Interfaces:**
-   * URL: [https://datasets.imdbws.com/](https://datasets.imdbws.com/)
-   * Primary tables: `title.basics.tsv.gz` (metadata: title, release year, runtime, primary genres), `title.principals.tsv.gz` (cast and crew roles with billing ordering), and `name.basics.tsv.gz` (actor names and primary professions).
-2. **The Movie Database (TMDB) API & Public Cinema Interfaces:**
-   * Used for cross-referencing worldwide box-office rankings and critical acclaim filters to focus on widely released feature films.
+1. **The Modern "Six Degrees of Kevin Bacon" (Small-World Topology):** Does contemporary cinema preserve the small-world property despite franchise fragmentation? We will compute the network diameter D and average shortest path length L on the giant connected component, testing the hypothesis that empirical clustering is significantly higher than a random graph (C_empirical >> C_random) with logarithmic path scaling (L ~ ln(|V|)).
+2. **Structural "Bridge Actors" via Betweenness Centrality:** Which actors possess the highest Freeman betweenness centrality (C_B), and does betweenness correlate with total degree? We hypothesize that top betweenness nodes are not solely franchise leads, but versatile character actors who cross boundaries between major blockbuster franchises and prestige indie cinema, acting as weak-tie bridges.
+3. **Franchise Cliques and Triadic Closure:** Do recurring ensemble productions produce localized clusters with maximum clustering coefficients? We hypothesize that recurring ensembles (Avengers, Dune, Knives Out) form near-complete cliques (C_i -> 1.0) through strong triadic closure, whereas actors with diverse filmographies exhibit lower clustering and higher neighborhood diversity.
+4. **Community Detection & Genre/Studio Homophily:** How do divisive (Girvan–Newman) and agglomerative (Louvain) community detection algorithms partition the Hollywood collaboration network? We hypothesize that the network partitions naturally into interpretable genre and production clusters (e.g., Superhero Blockbuster, British Drama, Indie/Comedy circuits), with Girvan–Newman's edge removals systematically severing the inter-franchise bridge actors.
 
-#### 2.2 Network Construction & Bipartite Projection
-Raw cinematic data represents a **bipartite affiliation network** $B = (V_A \cup V_M, E_B)$, where $V_A$ represents actors, $V_M$ represents feature films, and an edge exists between an actor and a movie if the actor appeared in that production.
-
-To focus on peer collaboration dynamics, we perform a unipartite **bipartite projection onto the actor partition**:
-* **Nodes ($V$):** Professional actors who starred in feature films released from 2018 to 2026. To eliminate peripheral noise and uncredited cameos while preventing unmanageable clique explosions, we filter to the top 4–6 principal billed actors per film.
-* **Edges ($E$):** Co-starring interactions. An undirected edge $e = (u, v)$ exists if actor $u$ and actor $v$ co-starred in at least one feature film within the evaluation window.
-* **Edge Weights ($W$):** An integer weight $w(u, v) \ge 1$ denoting the total number of shared feature film productions, directly operationalizing Granovetter's tie strength.
-* **Target Network Scale:** Approximately **1,800 to 2,500 actor nodes** and **6,000 to 12,000 collaboration edges**. This sweet spot provides high structural richness and non-trivial community partitions while guaranteeing fast, exact calculation of all-pairs shortest paths, diameters, and iterative edge-betweenness centrality in NetworkX.
-* **Export Artifact:** A standardized `.graphml` file encoding node attributes (actor name, primary genres, film count) and edge attributes (weight, titles of shared films).
-
----
-
-### 3. Knowledge to Gain & Research Hypotheses
-
-We frame the analysis around four testable research questions grounded in network science and the CS 176 curriculum:
-
-#### Research Question 1: Small-World Topology & Empirical Bacon Numbers (Lecture 3)
-* **Question:** Does modern cinema continue to exhibit small-world network properties despite franchise fragmentation and streaming silos?
-* **Hypothesis:** We hypothesize that the actor network forms a **Small-World Network** (Watts & Strogatz, 1998), characterized by a high average clustering coefficient ($C_{\text{empirical}} \gg C_{\text{random}}$) alongside an average path length $L$ scaling logarithmically with network size ($L \sim \ln |V|$). We will measure the network diameter $D$ and average shortest path length across the giant connected component to quantify the modern equivalent of the "Bacon Number."
-
-#### Research Question 2: Structural "Bridge Actors" via Betweenness Centrality (Lecture 2)
-* **Question:** Which actors act as global structural bridges across Hollywood, and does high betweenness correlate with high degree (total co-stars)?
-* **Hypothesis:** High betweenness centrality ($C_B(v)$) will not be dominated strictly by superstar franchise leads (who tend to stay inside dense franchise cliques). Instead, the highest betweenness nodes will be versatile character actors who cross boundaries between blockbuster IP franchises (Marvel, Star Wars) and prestige indie cinema (A24, Focus Features), serving as structural weak-tie bridges across disparate casting communities.
-
-#### Research Question 3: Triadic Closure within Franchise Ensembles (Lecture 3 & 4)
-* **Question:** Do recurring ensemble productions create localized cliques with maximum clustering coefficients?
-* **Hypothesis:** Cast members of multi-film franchises and recurring ensembles (e.g., *Avengers*, *Dune*, *Knives Out*, *Fast & Furious*) will exhibit local clustering coefficients approaching $C_i \to 1.0$ due to strong triadic closure, whereas character actors spanning unconnected independent productions will have significantly lower clustering coefficients and broader neighborhood diversity.
-
-#### Research Question 4: Community Partitioning & Genre/Studio Homophily (Activity 2)
-* **Question:** How do divisive (Girvan–Newman) and agglomerative (Louvain) community detection algorithms partition the Hollywood social landscape?
-* **Hypothesis:** Community detection will recover distinct, interpretable production clusters (e.g., Superhero/Sci-Fi Blockbuster clique, British/European Period Drama clique, Comedy/Indie circuit). Girvan–Newman's iterative removal of maximum edge-betweenness bridges will systematically sever the inter-franchise connecting actors first, demonstrating the structural separation of Hollywood creative sub-economies.
-
----
-
-### 4. Proposed Network Characterization & Algorithmic Plan
-
-In strict accordance with Step 2 of the project specifications, we will compute and report:
-1. **Total Number of Nodes ($|V|$):** Number of unique principal actors in the network.
-2. **Total Number of Edges ($|E|$):** Number of unique co-starring collaboration pairs.
-3. **Connected Components:** Total count and size distribution of connected components, explicitly isolating the **Giant Connected Component (GCC)**.
-4. **Network Diameter:** The longest shortest path distance $\max_{u, v \in V_{\text{GCC}}} d(u, v)$, computed across the GCC.
-5. **Top 5 Nodes by Clustering Coefficient:** Identification of the five actors with the highest local clustering coefficients $C_i = \frac{2 e_i}{k_i(k_i - 1)}$, with explicit tie-breaking criteria.
-6. **Top 5 Nodes by Betweenness Centrality:** Identification of the five actors with highest Freeman node betweenness centrality $C_B(v) = \sum_{s \neq v \neq t} \frac{\sigma_{st}(v)}{\sigma_{st}}$.
-7. **Algorithmic Implementation — Girvan–Newman with Tie-Breaking:**
-   * A Python implementation iteratively calculating edge betweenness centrality:
-     $$C_B(e) = \sum_{s \neq t} \frac{\sigma_{st}(e)}{\sigma_{st}}$$
-   * At each iteration, the edge with the maximum edge betweenness is deleted. If multiple edges tie for the maximum value, ties are broken deterministically.
-   * Edge removals will be logged until the giant component splits into distinct components, tracking modularity score $Q$ at each step and comparing the final partition against the **Louvain modularity maximization** algorithm.
-
----
-
-### 5. Visualization Plan (Step 3)
-
-We will construct high-resolution, colorized network visualizations using NetworkX and Matplotlib:
-* **Global Network Topology:** A force-directed layout (Spring layout with tuned Fruchterman–Reingold parameters) colored by detected Louvain / Girvan–Newman community partitions.
-* **Centrality Mapping:** Node diameters will be scaled dynamically according to betweenness centrality, visually highlighting the key "bridge actors."
-* **Bridge Edge Highlighting:** Intra-community edges will be rendered in vibrant community colors, while inter-community bridge edges identified by Girvan–Newman will be highlighted in dark slate gray (`#333333`) to visually isolate casting fault lines.
-
----
-
-### 6. Deliverables & Project Roadmap
-
-| Phase | Milestone Description | Target Output |
-| :--- | :--- | :--- |
-| **Phase 1** | Dataset curation, web extraction script, and bipartite projection | `build_cinema_network.py`, `cinema_network.graphml` |
-| **Phase 2** | Network characterization, metric calculations, and top-5 rankings | `Characterization.ipynb`, characterization table |
-| **Phase 3** | Girvan–Newman divisive loop, modularity tracking, and Louvain | Community partitions, modularity $Q$ logs, `communities.txt` |
-| **Phase 4** | High-resolution visual renderings and layout tuning | Multi-color PNG/SVG network visualization figures |
-| **Phase 5** | Final Comprehensive Project Report ($\le 10$ pages) | `CS176_Final_Report_Joel_Jacob.pdf` |
-
----
-
-### 7. References
-1. **Watts, D. J., & Strogatz, S. H. (1998).** Collective dynamics of 'small-world' networks. *Nature*, 393(6684), 440-442.
-2. **Girvan, M., & Newman, M. E. (2002).** Community structure in social and biological networks. *Proceedings of the National Academy of Sciences*, 99(12), 7821-7826.
-3. **Blondel, V. D., et al. (2008).** Fast unfolding of communities in large networks. *Journal of Statistical Mechanics: Theory and Experiment*, 2008(10), P10008.
-4. **Granovetter, M. S. (1973).** The strength of weak ties. *American Journal of Sociology*, 78(6), 1360-1380.
-5. **IMDb Datasets Documentation.** Non-commercial data access. [https://datasets.imdbws.com/](https://datasets.imdbws.com/).
+### 4. Planned Characterization & Deliverables
+In accordance with the assignment guidelines, our analysis pipeline will compute:
+* **Network Metrics:** Total nodes (|V|), total edges (|E|), connected components, and network diameter on the giant connected component.
+* **Top-5 Rankings:** Five nodes with the highest clustering coefficients and five nodes with the highest betweenness centrality (with deterministic tie-breaking).
+* **Algorithmic Analysis:** Custom implementation of the Girvan–Newman algorithm iteratively removing edges with maximum edge betweenness C_B(e) with deterministic tie-breaking, logging modularity score Q and comparing results against the Louvain algorithm.
+* **Visualizations & Report:** High-resolution force-directed network plots with nodes colored by community, node sizes scaled by betweenness centrality, and bridge edges highlighted in `#333333`. All results will be synthesized in a final comprehensive report (<= 10 pages).

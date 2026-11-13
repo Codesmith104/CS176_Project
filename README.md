@@ -42,7 +42,7 @@ The network was constructed by projecting a bipartite affiliation network of 1,6
 ├── build_cinema_network.py        # Pipeline script: data extraction, graph building, metrics
 ├── cinema_network.graphml         # Generated network artifact (GraphML format, 1.7 MB)
 ├── preliminary_network.png        # High-resolution network visualization (300 DPI)
-├── Project_Proposal_1-2pages.md   # Milestone 1: Approved 1-2 page proposal
+├── Project_Proposal.md          # Milestone 1: Approved 1-2 page proposal
 ├── Project_Progress_Report.md     # Milestone 2: 2-3 page formal progress report
 └── directions.txt                 # Course assignment instructions and guidelines
 ```
