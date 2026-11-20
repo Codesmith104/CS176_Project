@@ -4,6 +4,8 @@ Project_Proposal*.md
 Project_Progress_Report*.md
 Project_Final_Report*.md
 Old Projects/
+build_submission_artifacts.py
+submission/
 
 # Raw dataset cache
 movies_cache.json
