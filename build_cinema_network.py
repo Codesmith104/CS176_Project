@@ -2,7 +2,8 @@
 Modern Cinema Collaboration Network Analysis (2018–2026)
 CS 176: Social Network Analysis
 Complete Pipeline: Data Extraction, GraphML Construction, Topological Characterization,
-Girvan-Newman Community Divisive Partitioning, and Multi-Technique Network Visualization.
+Girvan-Newman Divisive Partitioning, Link Prediction (Train/Test Split),
+and Multi-Technique Network Visualization.
 """
 
 import os
@@ -10,12 +11,14 @@ import json
 import urllib.request
 import itertools
 import time
+import random
 from collections import Counter
 
 import networkx as nx
 import networkx.algorithms.community as nx_comm
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.metrics import roc_auc_score, roc_curve
 
 def load_modern_movies(cache_file=None):
     """
@@ -47,7 +50,7 @@ def construct_collaboration_network(movies, max_billing=4):
     """
     Step 1: Project bipartite film-actor affiliation network into an undirected,
     weighted unipartite actor collaboration network G = (V, E, W).
-    Filters to top `max_billing` actors per film to prevent clique expansion.
+    Filters to top `max_billing` actors per film to prevent combinatorial clique expansion.
     """
     print(f"Constructing unipartite actor network (max billing = {max_billing})...")
     G = nx.Graph()
@@ -244,13 +247,111 @@ def run_girvan_newman_analysis(gcc, target_splits=4):
         "removed_edge_log": removed_edge_log
     }
 
-def generate_visualizations(G, gcc, comms, gn_results, output_dir=None):
+def run_link_prediction_analysis(gcc, n_test_edges=500):
+    """
+    Step 2.8: Implements Link Prediction using Train/Test Edge Splitting.
+    Evaluates topological similarity heuristics (Jaccard, Adamic-Adar,
+    Resource Allocation, and Preferential Attachment) using ROC-AUC scores.
+    """
+    print("\n" + "="*65)
+    print("STEP 2.8: LINK PREDICTION VIA TRAIN/TEST SPLIT (EVALUATION)")
+    print("="*65)
+
+    random.seed(42)
+    np.random.seed(42)
+
+    edges = list(gcc.edges())
+    random.shuffle(edges)
+
+    train_G = gcc.copy()
+    test_pos = []
+
+    # Hold out positive edges while maintaining connectivity
+    for u, v in edges:
+        if len(test_pos) >= n_test_edges:
+            break
+        train_G.remove_edge(u, v)
+        if nx.has_path(train_G, u, v):
+            test_pos.append((u, v))
+        else:
+            train_G.add_edge(u, v)
+
+    # Sample equal number of negative edges (actor pairs that never co-starred)
+    nodes = list(gcc.nodes())
+    test_neg = set()
+    while len(test_neg) < len(test_pos):
+        u, v = random.sample(nodes, 2)
+        if not gcc.has_edge(u, v) and (v, u) not in test_neg:
+            test_neg.add((u, v))
+    test_neg = list(test_neg)
+
+    y_true = [1] * len(test_pos) + [0] * len(test_neg)
+    test_pairs = test_pos + test_neg
+
+    print(f"Constructed Link Prediction Split: {len(test_pos)} Positive Edges, {len(test_neg)} Negative Non-Edges.")
+
+    # 1. Jaccard Coefficient
+    j_scores = [p for u, v, p in nx.jaccard_coefficient(train_G, test_pairs)]
+    auc_j = roc_auc_score(y_true, j_scores)
+
+    # 2. Adamic-Adar Index
+    aa_scores = [p for u, v, p in nx.adamic_adar_index(train_G, test_pairs)]
+    auc_aa = roc_auc_score(y_true, aa_scores)
+
+    # 3. Resource Allocation Index
+    ra_scores = [p for u, v, p in nx.resource_allocation_index(train_G, test_pairs)]
+    auc_ra = roc_auc_score(y_true, ra_scores)
+
+    # 4. Preferential Attachment
+    pa_scores = [p for u, v, p in nx.preferential_attachment(train_G, test_pairs)]
+    auc_pa = roc_auc_score(y_true, pa_scores)
+
+    print("\n--- LINK PREDICTION ROC-AUC EVALUATION ---")
+    print(f"1. Adamic-Adar Index         : ROC-AUC = {auc_aa:.4f} (Weights shared co-stars by 1/log(k))")
+    print(f"2. Jaccard Coefficient       : ROC-AUC = {auc_j:.4f} (Normalized mutual neighbor overlap)")
+    print(f"3. Resource Allocation Index : ROC-AUC = {auc_ra:.4f} (Resource transfer through shared co-stars)")
+    print(f"4. Preferential Attachment   : ROC-AUC = {auc_pa:.4f} (Baseline degree product model)")
+
+    # Predict top future unlinked actor collaborations among top 100 actors
+    top_actors = [n for n, d in sorted(gcc.degree(), key=lambda x: x[1], reverse=True)[:100]]
+    non_edges_top = []
+    for i in range(len(top_actors)):
+        for j in range(i + 1, len(top_actors)):
+            u, v = top_actors[i], top_actors[j]
+            if not gcc.has_edge(u, v):
+                non_edges_top.append((u, v))
+
+    future_preds = [(u, v, p) for u, v, p in nx.adamic_adar_index(gcc, non_edges_top)]
+    future_preds.sort(key=lambda x: x[2], reverse=True)
+
+    print("\n--- TOP 5 PREDICTED FUTURE CO-STARRING COLLABORATIONS (ADAMIC-ADAR) ---")
+    top_future = []
+    for rank, (u, v, score) in enumerate(future_preds[:5], 1):
+        shared = sorted(list(set(gcc.neighbors(u)).intersection(set(gcc.neighbors(v)))))
+        top_future.append((u, v, score, shared))
+        print(f"   {rank}. {u} & {v}: Score = {score:.3f} | Mutual Co-Stars: {', '.join(shared[:3])}")
+
+    return {
+        "y_true": y_true,
+        "j_scores": j_scores,
+        "aa_scores": aa_scores,
+        "ra_scores": ra_scores,
+        "pa_scores": pa_scores,
+        "auc_j": auc_j,
+        "auc_aa": auc_aa,
+        "auc_ra": auc_ra,
+        "auc_pa": auc_pa,
+        "top_future": top_future
+    }
+
+def generate_visualizations(G, gcc, comms, gn_results, lp_results, output_dir=None):
     """
     Step 3: Multi-technique network visualizations.
     Generates:
       1. preliminary_network.png / figure1_network_topology.png: Core spring layout with centrality sizing.
       2. figure2_girvan_newman_splits.png: Pre- and post-partitioning of community C0 with severed bridge edges.
-      3. figure3_network_distributions.png: Degree distribution, edge weights, and betweenness scatter plot.
+      3. figure3_network_distributions.png: 2x2 multi-panel figure covering Degree Distribution,
+         Edge Weights, Betweenness vs. Degree, and Link Prediction ROC Curves.
     """
     if output_dir is None:
         output_dir = os.path.dirname(os.path.abspath(__file__))
@@ -365,24 +466,24 @@ def generate_visualizations(G, gcc, comms, gn_results, output_dir=None):
     print("Figure 2 generated successfully!")
 
     # -------------------------------------------------------------
-    # Figure 3: Macro-Topological Metric & Centrality Distributions
+    # Figure 3: Macro-Topological Metric, Centrality, & Link Prediction
     # -------------------------------------------------------------
     fig3_path = os.path.join(output_dir, "figure3_network_distributions.png")
-    print(f"Rendering Figure 3 (Topological Distributions) -> {fig3_path}...")
+    print(f"Rendering Figure 3 (Topological Distributions & Link Prediction ROC) -> {fig3_path}...")
 
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5), dpi=300)
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12), dpi=300)
 
     # 3A: Degree Distribution
     degrees = [d for n, d in G.degree()]
-    axes[0].hist(degrees, bins=30, color="#2980b9", edgecolor="black", alpha=0.8)
-    axes[0].set_title("Actor Degree Distribution", fontsize=11, fontweight="bold")
-    axes[0].set_xlabel("Degree (Number of Co-Stars)", fontsize=10)
-    axes[0].set_ylabel("Frequency (Actor Count)", fontsize=10)
-    axes[0].grid(True, linestyle="--", alpha=0.5)
+    axes[0, 0].hist(degrees, bins=30, color="#2980b9", edgecolor="black", alpha=0.8)
+    axes[0, 0].set_title("A: Actor Degree Distribution", fontsize=11, fontweight="bold")
+    axes[0, 0].set_xlabel("Degree (Number of Co-Stars)", fontsize=10)
+    axes[0, 0].set_ylabel("Frequency (Actor Count)", fontsize=10)
+    axes[0, 0].grid(True, linestyle="--", alpha=0.5)
 
     # Inset: Log-Log plot
     from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-    ax_inset = inset_axes(axes[0], width="45%", height="45%", loc="upper right")
+    ax_inset = inset_axes(axes[0, 0], width="42%", height="42%", loc="upper right")
     deg_counts = np.bincount(degrees)
     k = np.nonzero(deg_counts)[0]
     pk = deg_counts[k] / len(degrees)
@@ -395,31 +496,50 @@ def generate_visualizations(G, gcc, comms, gn_results, output_dir=None):
     w_counts = Counter(weights)
     w_keys = sorted(w_counts.keys())
     w_vals = [w_counts[k] for k in w_keys]
-    axes[1].bar(w_keys, w_vals, color="#27ae60", edgecolor="black", alpha=0.8, width=0.5)
-    axes[1].set_yscale("log")
-    axes[1].set_title("Edge Weight Distribution (Granovetter)", fontsize=11, fontweight="bold")
-    axes[1].set_xlabel("Edge Weight w(u, v) (Shared Films)", fontsize=10)
-    axes[1].set_ylabel("Edge Count (Log Scale)", fontsize=10)
-    axes[1].set_xticks(w_keys)
+    axes[0, 1].bar(w_keys, w_vals, color="#27ae60", edgecolor="black", alpha=0.8, width=0.5)
+    axes[0, 1].set_yscale("log")
+    axes[0, 1].set_title("B: Edge Weight Distribution (Granovetter)", fontsize=11, fontweight="bold")
+    axes[0, 1].set_xlabel("Edge Weight w(u, v) (Shared Films)", fontsize=10)
+    axes[0, 1].set_ylabel("Edge Count (Log Scale)", fontsize=10)
+    axes[0, 1].set_xticks(w_keys)
     for k_val, v_val in zip(w_keys, w_vals):
-        axes[1].text(k_val, v_val * 1.25, f"{v_val:,}\n({v_val/len(weights)*100:.1f}%)", ha="center", fontsize=8, fontweight="bold")
-    axes[1].grid(True, linestyle="--", alpha=0.5)
+        axes[0, 1].text(k_val, v_val * 1.25, f"{v_val:,}\n({v_val/len(weights)*100:.1f}%)", ha="center", fontsize=8, fontweight="bold")
+    axes[0, 1].grid(True, linestyle="--", alpha=0.5)
 
     # 3C: Betweenness vs Degree
     bc = nx.betweenness_centrality(gcc)
     bc_vals = [bc.get(n, 0) for n in gcc.nodes()]
     deg_gcc = [gcc.degree(n) for n in gcc.nodes()]
-    axes[2].scatter(deg_gcc, bc_vals, alpha=0.45, color="#8e44ad", edgecolors="none", s=25)
-    axes[2].set_title("Freeman Betweenness vs. Degree", fontsize=11, fontweight="bold")
-    axes[2].set_xlabel("Degree Centrality in GCC", fontsize=10)
-    axes[2].set_ylabel("Betweenness Centrality C_B", fontsize=10)
-    axes[2].grid(True, linestyle="--", alpha=0.5)
+    axes[1, 0].scatter(deg_gcc, bc_vals, alpha=0.45, color="#8e44ad", edgecolors="none", s=25)
+    axes[1, 0].set_title("C: Freeman Betweenness vs. Degree Centrality", fontsize=11, fontweight="bold")
+    axes[1, 0].set_xlabel("Degree Centrality in GCC", fontsize=10)
+    axes[1, 0].set_ylabel("Betweenness Centrality C_B", fontsize=10)
+    axes[1, 0].grid(True, linestyle="--", alpha=0.5)
 
     top_bridges = sorted(bc.items(), key=lambda x: x[1], reverse=True)[:4]
     for name, val in top_bridges:
         d_val = gcc.degree(name)
-        axes[2].annotate(name, (d_val, val), textcoords="offset points", xytext=(5, 5),
-                         fontsize=8, fontweight="bold", arrowprops=dict(arrowstyle="->", lw=0.8, color="black"))
+        axes[1, 0].annotate(name, (d_val, val), textcoords="offset points", xytext=(5, 5),
+                            fontsize=8, fontweight="bold", arrowprops=dict(arrowstyle="->", lw=0.8, color="black"))
+
+    # 3D: Link Prediction ROC Curves
+    y_true = lp_results["y_true"]
+    fpr_aa, tpr_aa, _ = roc_curve(y_true, lp_results["aa_scores"])
+    fpr_j, tpr_j, _ = roc_curve(y_true, lp_results["j_scores"])
+    fpr_ra, tpr_ra, _ = roc_curve(y_true, lp_results["ra_scores"])
+    fpr_pa, tpr_pa, _ = roc_curve(y_true, lp_results["pa_scores"])
+
+    axes[1, 1].plot(fpr_aa, tpr_aa, color="#e74c3c", lw=2.0, label=f"Adamic-Adar (AUC = {lp_results['auc_aa']:.4f})")
+    axes[1, 1].plot(fpr_j, tpr_j, color="#2980b9", lw=2.0, linestyle="--", label=f"Jaccard (AUC = {lp_results['auc_j']:.4f})")
+    axes[1, 1].plot(fpr_ra, tpr_ra, color="#27ae60", lw=1.5, linestyle=":", label=f"Resource Alloc (AUC = {lp_results['auc_ra']:.4f})")
+    axes[1, 1].plot(fpr_pa, tpr_pa, color="#f39c12", lw=1.5, linestyle="-.", label=f"Preferential Attach (AUC = {lp_results['auc_pa']:.4f})")
+    axes[1, 1].plot([0, 1], [0, 1], color="#7f8c8d", lw=1.0, linestyle="--", label="Random Baseline (AUC = 0.5000)")
+
+    axes[1, 1].set_title("D: Link Prediction ROC Curves (Train/Test Split)", fontsize=11, fontweight="bold")
+    axes[1, 1].set_xlabel("False Positive Rate (FPR)", fontsize=10)
+    axes[1, 1].set_ylabel("True Positive Rate (TPR)", fontsize=10)
+    axes[1, 1].legend(loc="lower right", fontsize=8)
+    axes[1, 1].grid(True, linestyle="--", alpha=0.5)
 
     plt.tight_layout()
     plt.savefig(fig3_path, dpi=300, bbox_inches="tight")
@@ -432,5 +552,6 @@ if __name__ == "__main__":
     export_graphml(G)
     metrics = compute_characterization_metrics(G)
     gn_results = run_girvan_newman_analysis(metrics["gcc"], target_splits=4)
-    generate_visualizations(G, metrics["gcc"], metrics["comms"], gn_results)
+    lp_results = run_link_prediction_analysis(metrics["gcc"], n_test_edges=500)
+    generate_visualizations(G, metrics["gcc"], metrics["comms"], gn_results, lp_results)
     print("\nComplete CS 176 Social Network Analysis pipeline finished successfully!")

@@ -12,7 +12,8 @@ We evaluate:
 2. **Structural "Bridge Actors" via Betweenness Centrality:** Identifying versatile actors who bridge independent prestige cinema and major studio franchises.
 3. **Franchise Cliques & Triadic Closure:** Measuring localized clustering coefficients across recurring ensemble casts.
 4. **Community Detection & Studio Homophily:** Comparing divisive (Girvan–Newman) and agglomerative (Louvain) community detection algorithms.
-5. **Multi-Technique Visualizations:** High-resolution force-directed graphs, divisive decomposition diagrams, and statistical property distributions.
+5. **Link Prediction via Train/Test Split (Instructor Guideline):** Evaluating topological heuristics (Jaccard, Adamic–Adar, Resource Allocation, and Preferential Attachment) to predict future casting collaborations.
+6. **Multi-Technique Visualizations:** High-resolution force-directed graphs, divisive decomposition diagrams, and statistical property/ROC curves.
 
 ---
 
@@ -41,6 +42,20 @@ Iteratively removing edges with maximum edge betweenness $C_B(e)$ decomposes the
 * **Split 3 (Step 30):** Removed `('Hugh Jackman', 'Zach Galifianakis')` ($C_B = 0.0532$) $\to$ 4 components, $Q = 0.5854$
 * **Split 4 (Step 36):** Removed `('Seth Rogen', 'Gabriel LaBelle')` ($C_B = 0.0436$) $\to$ 5 components, $Q = 0.6089$
 
+### Link Prediction Benchmark (Step 2.8 — Train/Test Split):
+Evaluated across 500 held-out positive test edges and 500 negative non-edges ($N = 1,000$ pairs):
+* **Jaccard Coefficient:** $\text{ROC-AUC} = \mathbf{0.9852}$
+* **Adamic-Adar Index:** $\text{ROC-AUC} = \mathbf{0.9851}$
+* **Resource Allocation Index:** $\text{ROC-AUC} = \mathbf{0.9851}$
+* **Preferential Attachment:** $\text{ROC-AUC} = \mathbf{0.6264}$
+
+**Top Predicted Future Collaborations (Adamic-Adar):**
+1. **Tessa Thompson & Zazie Beetz** (Score: 1.660 | Shared: *André Holland*, *Armie Hammer*, *Jonathan Majors*)
+2. **Ryan Reynolds & Ben Affleck** (Score: 1.211 | Shared: *Gal Gadot*, *Jodie Comer*, *Lil Rel Howery*)
+3. **Bruce Willis & Jessica Chastain** (Score: 1.194 | Shared: *James McAvoy*, *John Malkovich*, *Vincent D'Onofrio*)
+4. **Jon Hamm & Anthony Mackie** (Score: 1.141 | Shared: *David Harbour*, *Jamie Dornan*, *Marcia Gay Harden*)
+5. **Tiffany Haddish & Casey Affleck** (Score: 1.127 | Shared: *Christopher Abbott*, *Elisabeth Moss*, *Tika Sumpter*)
+
 ---
 
 ## 📂 Repository Structure
@@ -48,12 +63,12 @@ Iteratively removing edges with maximum edge betweenness $C_B(e)$ decomposes the
 ├── README.md                              # Project documentation and empirical summary
 ├── Project_Final_Report.md                # Comprehensive final project report (<= 10 pages)
 ├── Cinema_Network_Analysis.ipynb          # Interactive, pre-executed Google Colab notebook
-├── build_cinema_network.py                # Complete pipeline: ingestion, metrics, GN algorithm, figures
+├── build_cinema_network.py                # Complete pipeline: ingestion, metrics, GN, LP, figures
 ├── cinema_network.graphml                 # Serialized network artifact (GraphML format, 1.7 MB)
 ├── preliminary_network.png                # Figure 1: Core force-directed topology (300 DPI)
 ├── figure1_network_topology.png           # Figure 1 alternate reference (300 DPI)
 ├── figure2_girvan_newman_splits.png       # Figure 2: Girvan-Newman divisive decomposition (300 DPI)
-├── figure3_network_distributions.png      # Figure 3: Degree, weight, and betweenness distributions (300 DPI)
+├── figure3_network_distributions.png      # Figure 3: Degree, weight, betweenness, and ROC curves (300 DPI)
 └── .gitignore                             # Git ignore configuration
 ```
 
@@ -69,12 +84,13 @@ Iteratively removing edges with maximum edge betweenness $C_B(e)$ decomposes the
 * `networkx`
 * `matplotlib`
 * `scipy`
+* `scikit-learn`
 * `numpy`
 
 ### Execution
 Run the complete end-to-end pipeline:
 ```bash
-uv run --with networkx --with matplotlib --with scipy --with numpy python build_cinema_network.py
+uv run --with networkx --with matplotlib --with scipy --with scikit-learn --with numpy python build_cinema_network.py
 ```
 This script will:
 1. Load or fetch the feature film dataset (2018–2026).
@@ -82,7 +98,8 @@ This script will:
 3. Export the network artifact to `cinema_network.graphml`.
 4. Calculate and display all characterization metrics and top centrality rankings.
 5. Execute the Girvan-Newman divisive algorithm and log bridge edge removals.
-6. Render and save all three high-resolution figures.
+6. Execute the Link Prediction train/test split benchmark and compute ROC-AUC scores.
+7. Render and save all three high-resolution figures.
 
 ### Interactive Google Colab
 Launch the analysis notebook directly in your browser:
