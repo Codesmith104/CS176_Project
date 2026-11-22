@@ -375,34 +375,41 @@ def generate_visualizations(G, gcc, comms, gn_results, lp_results, output_dir=No
     core_nodes = [node for node, deg in sorted(gcc.degree(), key=lambda x: x[1], reverse=True)[:250]]
     core_subgraph = gcc.subgraph(core_nodes).copy()
     core_bc = nx.betweenness_centrality(core_subgraph)
-    node_sizes = [max(40, core_bc[n] * 6000) for n in core_subgraph.nodes()]
+    node_sizes = [max(45, core_bc[n] * 6500) for n in core_subgraph.nodes()]
     node_colors = [node_to_comm.get(n, 0) % 16 for n in core_subgraph.nodes()]
 
-    plt.figure(figsize=(14, 10), dpi=300)
-    pos = nx.spring_layout(core_subgraph, seed=42, k=0.18, iterations=50)
+    fig, ax = plt.subplots(figsize=(13, 10), dpi=300)
+    pos = nx.spring_layout(core_subgraph, seed=42, k=0.30, iterations=120)
+    ax.set_aspect("equal")
 
-    nx.draw_networkx_edges(core_subgraph, pos, alpha=0.25, edge_color="#7f8c8d", width=0.8)
+    nx.draw_networkx_edges(core_subgraph, pos, ax=ax, alpha=0.18, edge_color="#8892b0", width=0.8)
     nx.draw_networkx_nodes(
         core_subgraph,
         pos,
+        ax=ax,
         node_size=node_sizes,
         node_color=node_colors,
         cmap=plt.cm.tab20,
-        alpha=0.85,
+        alpha=0.90,
         edgecolors="#2c3e50",
-        linewidths=0.5
+        linewidths=0.6
     )
 
-    top_labeled = sorted(core_bc.items(), key=lambda x: x[1], reverse=True)[:12]
-    labels = {n: n for n, _ in top_labeled}
-    nx.draw_networkx_labels(core_subgraph, pos, labels=labels, font_size=8, font_weight="bold", font_color="#1a1a1a")
+    top_labeled = sorted(core_bc.items(), key=lambda x: x[1], reverse=True)[:10]
+    for n, _ in top_labeled:
+        x, y = pos[n]
+        ax.text(
+            x, y + 0.022, n,
+            fontsize=8.5, fontweight="bold", ha="center", va="bottom", color="#1a1a1a",
+            bbox=dict(boxstyle="round,pad=0.22", facecolor="white", edgecolor="#bdc3c7", alpha=0.88, linewidth=0.6)
+        )
 
     plt.title(
         "Modern Cinema Collaboration Network (2018–2026) — Core Topology & Structural Bridges\n"
         f"Core Subgraph: {core_subgraph.number_of_nodes()} Vertices, {core_subgraph.number_of_edges()} Edges | Node Size: Betweenness Centrality | Color: Louvain Community",
         fontsize=12, fontweight="bold", pad=15
     )
-    plt.axis("off")
+    ax.axis("off")
     plt.tight_layout()
     plt.savefig(fig1_path, dpi=300, bbox_inches="tight")
     plt.savefig(fig1_alt_path, dpi=300, bbox_inches="tight")
@@ -420,8 +427,10 @@ def generate_visualizations(G, gcc, comms, gn_results, lp_results, output_dir=No
     critical_edges = gn_results["critical_edges"]
     final_comps = list(nx.connected_components(sub))
 
-    fig, axes = plt.subplots(1, 2, figsize=(20, 9), dpi=300)
-    pos_c0 = nx.spring_layout(c0, seed=42, k=0.22, iterations=80)
+    fig, axes = plt.subplots(1, 2, figsize=(16, 8.5), dpi=300)
+    pos_c0 = nx.spring_layout(c0, seed=42, k=0.28, iterations=100)
+    axes[0].set_aspect("equal")
+    axes[1].set_aspect("equal")
 
     # Panel A: Before Partitioning
     axes[0].set_title(
@@ -430,17 +439,22 @@ def generate_visualizations(G, gcc, comms, gn_results, lp_results, output_dir=No
         fontsize=11, fontweight="bold", pad=12
     )
     non_crit = [e for e in c0.edges() if tuple(sorted(e)) not in [tuple(sorted(x)) for x in critical_edges]]
-    nx.draw_networkx_edges(c0, pos_c0, edgelist=non_crit, ax=axes[0], alpha=0.3, edge_color="#7f8c8d", width=1.0)
+    nx.draw_networkx_edges(c0, pos_c0, edgelist=non_crit, ax=axes[0], alpha=0.22, edge_color="#8892b0", width=1.0)
     crit_pres = [e for e in c0.edges() if tuple(sorted(e)) in [tuple(sorted(x)) for x in critical_edges]]
-    nx.draw_networkx_edges(c0, pos_c0, edgelist=crit_pres, ax=axes[0], edge_color="#e74c3c", width=3.0, style="dashed")
-    nx.draw_networkx_nodes(c0, pos_c0, ax=axes[0], node_size=75, node_color="#3498db", edgecolors="#1b4f72", linewidths=0.5)
+    nx.draw_networkx_edges(c0, pos_c0, edgelist=crit_pres, ax=axes[0], edge_color="#e74c3c", width=3.2, style="dashed")
+    nx.draw_networkx_nodes(c0, pos_c0, ax=axes[0], node_size=85, node_color="#3498db", edgecolors="#1b4f72", linewidths=0.6, alpha=0.90)
 
     labeled_actors = set()
     for u, v in critical_edges:
         labeled_actors.add(u)
         labeled_actors.add(v)
-    labels_crit = {n: n for n in labeled_actors}
-    nx.draw_networkx_labels(c0, pos_c0, labels=labels_crit, ax=axes[0], font_size=8, font_weight="bold", font_color="#2c3e50")
+    for n in labeled_actors:
+        x, y = pos_c0[n]
+        axes[0].text(
+            x, y + 0.028, n,
+            fontsize=8, fontweight="bold", ha="center", va="bottom", color="#2c3e50",
+            bbox=dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="#bdc3c7", alpha=0.85, linewidth=0.5)
+        )
     axes[0].axis("off")
 
     # Panel B: After Divisive Removal
@@ -455,9 +469,15 @@ def generate_visualizations(G, gcc, comms, gn_results, lp_results, output_dir=No
             node_comp_map[n] = cid
 
     colors_sub = [node_comp_map[n] for n in sub.nodes()]
-    nx.draw_networkx_edges(sub, pos_c0, ax=axes[1], alpha=0.3, edge_color="#7f8c8d", width=1.0)
-    nx.draw_networkx_nodes(sub, pos_c0, ax=axes[1], node_size=85, node_color=colors_sub, cmap=plt.cm.tab10, edgecolors="#2c3e50", linewidths=0.5)
-    nx.draw_networkx_labels(sub, pos_c0, labels=labels_crit, ax=axes[1], font_size=8, font_weight="bold", font_color="#1a1a1a")
+    nx.draw_networkx_edges(sub, pos_c0, ax=axes[1], alpha=0.22, edge_color="#8892b0", width=1.0)
+    nx.draw_networkx_nodes(sub, pos_c0, ax=axes[1], node_size=90, node_color=colors_sub, cmap=plt.cm.tab10, edgecolors="#2c3e50", linewidths=0.6, alpha=0.90)
+    for n in labeled_actors:
+        x, y = pos_c0[n]
+        axes[1].text(
+            x, y + 0.028, n,
+            fontsize=8, fontweight="bold", ha="center", va="bottom", color="#1a1a1a",
+            bbox=dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="#bdc3c7", alpha=0.85, linewidth=0.5)
+        )
     axes[1].axis("off")
 
     plt.tight_layout()
