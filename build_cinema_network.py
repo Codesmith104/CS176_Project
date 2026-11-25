@@ -372,17 +372,17 @@ def generate_visualizations(G, gcc, comms, gn_results, lp_results, output_dir=No
         for node in c:
             node_to_comm[node] = comm_id
 
-    core_nodes = [node for node, deg in sorted(gcc.degree(), key=lambda x: x[1], reverse=True)[:250]]
+    core_nodes = [node for node, deg in sorted(gcc.degree(), key=lambda x: x[1], reverse=True)[:120]]
     core_subgraph = gcc.subgraph(core_nodes).copy()
     core_bc = nx.betweenness_centrality(core_subgraph)
-    node_sizes = [max(45, core_bc[n] * 6500) for n in core_subgraph.nodes()]
+    node_sizes = [max(70, core_bc[n] * 7500) for n in core_subgraph.nodes()]
     node_colors = [node_to_comm.get(n, 0) % 16 for n in core_subgraph.nodes()]
 
-    fig, ax = plt.subplots(figsize=(13, 10), dpi=300)
-    pos = nx.spring_layout(core_subgraph, seed=42, k=0.30, iterations=120)
+    fig, ax = plt.subplots(figsize=(12, 11), dpi=300)
+    pos = nx.spring_layout(core_subgraph, seed=42, k=0.36, iterations=140)
     ax.set_aspect("equal")
 
-    nx.draw_networkx_edges(core_subgraph, pos, ax=ax, alpha=0.18, edge_color="#8892b0", width=0.8)
+    nx.draw_networkx_edges(core_subgraph, pos, ax=ax, alpha=0.20, edge_color="#8892b0", width=0.9)
     nx.draw_networkx_nodes(
         core_subgraph,
         pos,
@@ -390,27 +390,22 @@ def generate_visualizations(G, gcc, comms, gn_results, lp_results, output_dir=No
         node_size=node_sizes,
         node_color=node_colors,
         cmap=plt.cm.tab20,
-        alpha=0.90,
+        alpha=0.92,
         edgecolors="#2c3e50",
-        linewidths=0.6
+        linewidths=0.7
     )
 
-    top_labeled = sorted(core_bc.items(), key=lambda x: x[1], reverse=True)[:10]
+    top_labeled = sorted(core_bc.items(), key=lambda x: x[1], reverse=True)[:8]
     for n, _ in top_labeled:
         x, y = pos[n]
         ax.text(
-            x, y + 0.022, n,
-            fontsize=8.5, fontweight="bold", ha="center", va="bottom", color="#1a1a1a",
-            bbox=dict(boxstyle="round,pad=0.22", facecolor="white", edgecolor="#bdc3c7", alpha=0.88, linewidth=0.6)
+            x, y + 0.024, n,
+            fontsize=9, fontweight="bold", ha="center", va="bottom", color="#1a1a1a",
+            bbox=dict(boxstyle="round,pad=0.25", facecolor="white", edgecolor="#bdc3c7", alpha=0.90, linewidth=0.6)
         )
 
-    plt.title(
-        "Modern Cinema Collaboration Network (2018–2026) — Core Topology & Structural Bridges\n"
-        f"Core Subgraph: {core_subgraph.number_of_nodes()} Vertices, {core_subgraph.number_of_edges()} Edges | Node Size: Betweenness Centrality | Color: Louvain Community",
-        fontsize=12, fontweight="bold", pad=15
-    )
     ax.axis("off")
-    plt.tight_layout()
+    plt.tight_layout(pad=0.5)
     plt.savefig(fig1_path, dpi=300, bbox_inches="tight")
     plt.savefig(fig1_alt_path, dpi=300, bbox_inches="tight")
     plt.close()
@@ -427,16 +422,15 @@ def generate_visualizations(G, gcc, comms, gn_results, lp_results, output_dir=No
     critical_edges = gn_results["critical_edges"]
     final_comps = list(nx.connected_components(sub))
 
-    fig, axes = plt.subplots(1, 2, figsize=(16, 8.5), dpi=300)
-    pos_c0 = nx.spring_layout(c0, seed=42, k=0.28, iterations=100)
+    fig, axes = plt.subplots(1, 2, figsize=(16, 8), dpi=300)
+    pos_c0 = nx.spring_layout(c0, seed=42, k=0.30, iterations=110)
     axes[0].set_aspect("equal")
     axes[1].set_aspect("equal")
 
     # Panel A: Before Partitioning
     axes[0].set_title(
-        "A: Primary Casting Community C0 Before Partition (139 Nodes, 292 Edges)\n"
-        "Highlighted Crimson Dashed Ties: Critical Bridge Edges with Max Edge Betweenness",
-        fontsize=11, fontweight="bold", pad=12
+        "A: Community C0 Before Partition (139 Nodes, 292 Edges) — Highlighted Critical Bridges",
+        fontsize=11.5, fontweight="bold", pad=10
     )
     non_crit = [e for e in c0.edges() if tuple(sorted(e)) not in [tuple(sorted(x)) for x in critical_edges]]
     nx.draw_networkx_edges(c0, pos_c0, edgelist=non_crit, ax=axes[0], alpha=0.22, edge_color="#8892b0", width=1.0)
@@ -459,9 +453,8 @@ def generate_visualizations(G, gcc, comms, gn_results, lp_results, output_dir=No
 
     # Panel B: After Divisive Removal
     axes[1].set_title(
-        f"B: Post Girvan-Newman Partition (36 Edges Removed)\n"
-        f"Divided into 5 Sub-Communities (Modularity Q = 0.6089)",
-        fontsize=11, fontweight="bold", pad=12
+        "B: Post Girvan-Newman Partition (5 Sub-Communities, Modularity Q = 0.6089)",
+        fontsize=11.5, fontweight="bold", pad=10
     )
     node_comp_map = {}
     for cid, comp in enumerate(final_comps):
@@ -480,7 +473,7 @@ def generate_visualizations(G, gcc, comms, gn_results, lp_results, output_dir=No
         )
     axes[1].axis("off")
 
-    plt.tight_layout()
+    plt.tight_layout(pad=0.8)
     plt.savefig(fig2_path, dpi=300, bbox_inches="tight")
     plt.close()
     print("Figure 2 generated successfully!")
